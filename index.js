@@ -9,6 +9,7 @@ var DISCOVER = 'discover';
 var JCB = 'jcb';
 var UNIONPAY = 'unionpay';
 var MAESTRO = 'maestro';
+var ELO = 'elo';
 var CVV = 'CVV';
 var CID = 'CID';
 var CVC = 'CVC';
@@ -21,7 +22,8 @@ var testOrder = [
   DISCOVER,
   JCB,
   UNIONPAY,
-  MAESTRO
+  MAESTRO,
+  ELO
 ];
 
 function clone(x) {
@@ -154,6 +156,26 @@ types[MAESTRO] = {
   }
 };
 
+/**
+ * Elo Regex:
+ * /^((63[62|63]{2}\s?[6789]{1,2})|(50[41|66|67]{2}\s?(75|99)?)|(4[035]{1}[178]{1}[1469]{1}(16|35)?))\d*$/
+ * /^(5067|438935|451416|4576|4011|504175|506699|636297|636368|636369)\d$/,
+ */
+types[ELO] = {
+  niceType: 'Elo',
+  type: ELO,
+  prefixPattern: /^((63[62|63]{2}\s?[6789]{1,2})|(50[41|66|67]{2}\s?(75|99)?)|(4[035]{1}[178]{1}[1469]{1}(16|35)?))\d*$/,
+  exactPattern: /^(5067|438935|451416|4576|4011|504175|506699|636297|636368|636369)\d*$/,
+  // prefixPattern: /^((63[62|63]{2}\s?[6789]{1,2})|(50[41|66|67]{2}\s?(75|99)?)|(4[035]{1}[178]{1}[1469]{1}(16|35)?))\d$/,
+  // exactPattern: /^((63[62|63]{2}\s?[6789]{1,2})|(50[41|66|67]{2}\s?(75|99)?)|(4[035]{1}[178]{1}[1469]{1}(16|35)?))\d$/,
+  gaps: [4, 6, 8, 12],
+  lengths: [16, 18, 19],
+  code: {
+    name: CVV,
+    size: 3
+  }
+};
+
 function creditCardType(cardNumber) {
   var type, value, i;
   var prefixResults = [];
@@ -173,8 +195,22 @@ function creditCardType(cardNumber) {
     }
 
     if (value.exactPattern.test(cardNumber)) {
+      /**
+       * When cardNumber belongs to 'ELO' it conflict with visa regex, need to clean results.
+       */
+      if (value.type === ELO) {
+        exactResults = [];
+      }
+
       exactResults.push(clone(value));
     } else if (value.prefixPattern.test(cardNumber)) {
+      /**
+       * When cardNumber belongs to 'ELO' it conflict with visa regex, need to clean results.
+       */
+      if (value.type === ELO) {
+        prefixResults = [];
+      }
+
       prefixResults.push(clone(value));
     }
   }
@@ -194,7 +230,8 @@ creditCardType.types = {
   DISCOVER: DISCOVER,
   JCB: JCB,
   UNIONPAY: UNIONPAY,
-  MAESTRO: MAESTRO
+  MAESTRO: MAESTRO,
+  ELO: ELO
 };
 
 module.exports = creditCardType;
